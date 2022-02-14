@@ -4,161 +4,248 @@
 
 using namespace std;
 
+// class for the TrieNode's in the Trie.
 class TrieNode
 {
-    public:
-        TrieNode()
-        {
-            children = vector<TrieNode *> (62, NULL);
-            numWords = 0;
-            wordFlag = false;
-        };
+  public:
 
-        TrieNode *getChild(unsigned int index)
-        {
-            return children[index];
-        };
+    // initialize the trie with 62 children to NULL, numWords to 0, and wordFlag to false.
+    // 62 children maps for: 0-9 for digit characters, 10-35 for uppercase letters, 36-61 for lowercase letters
+    TrieNode()
+    {
+      children = vector<TrieNode*> (62, NULL);
+      numWords = 0;
+      wordFlag = false;
+    };
 
-        void addChild(unsigned int index)
-        {
-            children[index] = new TrieNode();
-        };
+    // increment the number of words in a subtree at specific node.
+    void incrementNumWords()
+    {
+      numWords++;
+    };
 
-        unsigned int getNumWords()
-        {
-            return numWords;
-        };
+    // toggle the status of any given node, which is representative of a given word existing.
+    void toggleWord()
+    {
+      wordFlag = !wordFlag;
+    };
 
-        bool isWord()
-        {
-            return wordFlag;
-        };
+    // get a pointer to a specific child based on an index.
+    TrieNode *getChild(unsigned int index)
+    {
+      return children[index];
+    };
 
-        void incrementNumWords()
-        {
-            numWords++;
-        };
+    // add a child to an index. this has to be this way, else setting NULL = to an address does nothing.
+    // the dereferencing of the array index is key. this properly creates a node at a given index.
+    void addChild(unsigned int index)
+    {
+      children[index] = new TrieNode();
+    };
 
-        void decrementNumWords()
-        {
-            numWords--;
-        };
+    // returns the status of a node and if it is a word.
+    bool isWord()
+    {
+      return wordFlag;
+    };
 
-        void setWord(bool status)
-        {
-            wordFlag = status;
-        };
+    // returns the number of words in a given subtree.
+    unsigned int getNumWords()
+    {
+      return numWords;
+    };
 
-    private:
-        vector<TrieNode*> children;
-        unsigned int numWords;
-        bool wordFlag;
+  private:
+    vector<TrieNode*> children;
+    unsigned int numWords;
+    bool wordFlag;
+
 };
 
+// class for the trie with many conveniences that trie often need.
 class Trie
 {
-    public:
-        Trie ()
-        {
-            root = new TrieNode();
-        };
+  public:
+    // initializes the very root to be non-NULL.
+    Trie()
+    {
+      root = new TrieNode();
+    };
 
-        TrieNode *search(string term)
-        {
-            unsigned int k = 0;
-            TrieNode *c = root;
-            while (c != NULL && k < term.size())
-            {
-                c = c->getChild(charToIndex(term[k]));
-                k++;
-            };
+    // searches for a given word/term in a trie.
+    TrieNode *search(string term)
+    {
+      // iteration starting at 0 for the indexing of the word and a sliding pointer starting from root.
+      unsigned int k = 0;
+      TrieNode *c = root;
 
-            return c;
-        };
+      // iterate through the trie in the direction of the word.
+      // if c == NULL, stop. that means that the word is not in the dictionary.
+      // more specifically, the trie has not even extended as deep as the length of that word
+      // in that given sequence for a particular word.
+      // if the path does exist to that word, the terminating condition will be the second.
+      // this would mean that you would stop at the node that is the "location" for a given word/term.
+      while (c != NULL && k < term.size())
+      {
+        c = c->getChild(charToIndex(term[k]));
+        k++;
+      };
 
-        bool insert(string term)
-        {
-            TrieNode *searchResult = search(term);
-            if (searchResult != NULL && searchResult->isWord())
-                return false;
-            
-            unsigned int k = 0;
-            TrieNode *c = root;
-            while (k  < term.size())
-            {
-                unsigned int index = charToIndex(term[k]);
-                TrieNode *next = c->getChild(index);
-                if (next == NULL)
-                {
-                    c->addChild(index);
-                };
+      // this allows access to the data of a given node: like numWords, isWord, and so on.
+      return c;
+    };
 
-                c->incrementNumWords();
-                c = c->getChild(index);
-                k++;
-            };
-
-            c->setWord(true);
+    // searches inserts a particular word.
+    bool insert(string term)
+    {
+      // searches for the term first.
+      // if this term is found as a node (non-NULL) and is marked as a word, return false. no need to insert. 
+      TrieNode *searchResult = search(term);
+      if (searchResult != NULL && searchResult->isWord())
+        return false;
+      
+      // k and c to start iterating down the path for the given word/term.
+      unsigned int k = 0;
+      TrieNode *c = root;
+      while (k < term.size())
+      {
+        // gets the particular index for a alphanumeric character in a string.
+        unsigned int childIndex = charToIndex(term[k]);
+        // if the child at the childIndex for the character is null, create/add the child at the index.
+        if (c->getChild(childIndex) == NULL)
+          c->addChild(childIndex);
+        
+        // since the root is meant to not count as a word, check a node is not the root.
+        // if it is not the root, we should increment the word at a node as a new word will be added to its subtree.
+        if (c != root)
             c->incrementNumWords();
 
-            return true;
-        };
+        // move the sliding pointer down to the given children based on the character's child index.
+        c = c->getChild(childIndex);
+        k++;
+      };
+
+      // at this point, c is sitting at the location of the given word inserted.
+      // since we are inclusive of a node itself in its subtree in respect to numwords,
+      // increment this node's numWords. also toggle the status of the word.
+      // by default the isWord flag of a given word is meant to be false, so toggling it will switch to it's inverse; true.
+      // return true. we have successfully incremented the word.
+      c->incrementNumWords();
+      c->toggleWord();
+      return true;
+    };
+
+    // gets all words in the trie and sorts to an array if needed, and in a given order(ascending or descending)
+    // the order depends on the bool value of the reverse variable.
+    unsigned int getWords(TrieNode *node, vector<string> &words, bool reverse=false,  string str="")
+    {
+      // stores if a location holds a word.
+      unsigned int res = node->isWord() ? 1 : 0;
+
+      // if reverse is false and node is a word, pushback now. this is done preorder for ascending order.
+      if (!reverse && node->isWord())
+        words.push_back(str);
+
+      // a very custom for loop that has a binary starting point, condition, and direction of variable switching.
+      // this is to handle for the differences that arise when sorting in ascending vs descending order.
+      // if a node at an index is non NULL, traverse down the path.
+      for (int x = (!reverse ? 0 : 61); (!reverse ? (x < 62) : (x >= 0)); (!reverse ? (x++) : (x--)))
+        if (node->getChild(x) != NULL)
+          res += getWords(node->getChild(x), words, reverse, str + string(1, indexToChar(x)));
+
+      // if reverse is true and a node is a word, pushback now. this is done postorder for descending order.
+      if (reverse && node->isWord())
+        words.push_back(str);
+      
+      return res;
+    };
+
+    // returns the count of words starting with a given word/term by utilizing search for node data (numWords)
+    unsigned int countWordsStartingWith(string term)
+    {
+      TrieNode *searchResult = search(term);
+      return (searchResult != NULL) ? searchResult->getNumWords() : 0;
+    };
 
 
-        void printWords(TrieNode *node, bool reverse=false, string str="")
+    // gets all words with a given character and the count.
+    unsigned int getWordsWithCharacter(TrieNode *node, char c, vector<string> &words, bool ancestralLetterFound=false, string str="")
+    {
+      // stores the count of the words with a given character
+      unsigned int res = 0;
+
+      // if the character has previously been found in the current path of an arbitrary word and the node is a word
+      // add the word to the words vector and increment the counter.
+      if (ancestralLetterFound && node->isWord()) 
+      {
+        words.push_back(str);
+        res++;
+      };
+
+      // iterate through all possible character node child indexes.
+      for (int x = 0; x < 62; x++)
+      {
+        // if a given child of a node is non NULL...
+        if (node->getChild(x) != NULL)
         {
-            if (!reverse && node->isWord())
-                cout << str << '\n';
-
-            for (int x = (!reverse ? 0 : 61); (!reverse ? (x < 62) : (x >= 0)) ; (!reverse ? (x++) : (x--)))
-                if (node->getChild(x) != NULL)
-                {
-                    printWords(node->getChild(x), reverse, str + string(1, indexToChar(x)));
-                };
-
-            if (reverse && node->isWord())
-                cout << str << '\n';
+          // check if we are at the correct index for the character. if so, the word on the given path has the character.
+          // set the ancestralLetterFound parameter to true, we have found the letter.
+          // if it is not the character mapped to the current index, keep traversing, however keep the same ancestralLetterFound
+          // throughout all deeper level recursions. we only care to change it if we find the character.
+          // if the target character is found more than once, it will just be overwritten to the same value: true. no change to result.
+          if (x == charToIndex(c))
+            res += getWordsWithCharacter(node->getChild(x), c, words, true, str + string(1, indexToChar(x)));
+          else
+            res += getWordsWithCharacter(node->getChild(x), c, words, ancestralLetterFound, str + string(1, indexToChar(x)));
         };
+      };
 
-        
+      return res;
+    };
 
-    private:
-        TrieNode *root;
+  private:
+    TrieNode *root;
 
-        bool isUpperCase(char c)
-        {
-            return c >= 'A' && c <= 'Z';
-        };
+    // return bool of whether a character is uppercase or not
+    bool isUpperCase(char c)
+    {
+      return (c >= 'A' && c <= 'Z');
+    };
 
-        bool isLowerCase(char c)
-        {
-            return c >= 'a' && c <= 'z';
-        };
+    // return bool of whether a character is lowercase or not
+    bool isLowerCase(char c)
+    {
+      return (c >= 'a' && c <= 'z');
+    };
 
-        bool isNumber(char c)
-        {
-            return c >= '0' && c <= '9';
-        };
+    // return bool of whether a character is a digit or not
+    bool isDigit(char c)
+    {
+      return (c >= '0' && c <= '9');
+    };
 
-        unsigned int charToIndex(char c)
-        {
-            if (isLowerCase(c))
-                return (c - 'a');
-            else if (isUpperCase(c))
-                return 26 + (c - 'A');
-            else if (isNumber(c))
-                return 52 + (c - '0');
-        };
+    // calculate the proper index base shift for a given character.
+    // in ascii, numbers come first as [48, 57], then uppercase as [65, 90], and finally lowercase as [97, 122].
+    unsigned int charToIndex(char c)
+    {
+      if (isDigit(c))
+        return c - '0';
+      else if (isUpperCase(c))
+        return 10 + (c - 'A');
+      else if (isLowerCase(c))
+        return 36 + (c - 'a');
+    };
 
-        char indexToChar(unsigned int index)
-        {
-            if (index >= 0 && index <= 25)
-                return 'a' + index;
-            else if (index >= 26 && index <= 51)
-                return 'A' + (index - 26);
-            else if (index >= 52 && index <= 61)
-                return '0' + (index - 52);
-        };
+    // calculate the proper character for a given base shifted index.
+    // in ascii, numbers come first as [48, 57], then uppercase as [65, 90], and finally lowercase as [97, 122].
+    unsigned int indexToChar(unsigned int index)
+    {
+      if (index >= 0 && index < 10)
+        return '0' + index;
+      else if (index >= 10 && index < 36)
+        return 'A' + (index - 10);
+      else if (index >= 36 && index < 62)
+        return 'a' + (index - 36);
+    };
 
 };
-
