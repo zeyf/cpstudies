@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <tuple>
 
 using namespace std;
 
@@ -203,6 +204,32 @@ class Trie
       return res;
     };
 
+  /*
+  bool delete_(string term)
+  {
+    vector<tuple<TrieNode*, TrieNode*, unsigned int index>> path;
+    TrieNode *searchResult = search(term);
+    if (searchResult == NULL) // the node does not exist; path not established.
+      return false;
+    else if (!searchResult->isWord()) // if the node exists and is not a word
+      return false;
+    else if (searchResult->getNumWords() > 1) // if the node exists, is a word, and has more than one word in subtree
+    {
+      searchResult->toggleWord();
+      searchResult->decrementNumWords();
+      return true;
+    }
+
+    unsigned int k = 0;
+    int index = -1;
+    TrieNode *child = root, *parent = NULL;
+    while ()
+    {
+      path.append(make_tuple(child, parent, index));
+      k++;
+    };
+  };
+  */
   private:
     TrieNode *root;
 
