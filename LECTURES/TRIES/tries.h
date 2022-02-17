@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <tuple>
 
 using namespace std;
 
@@ -25,6 +24,12 @@ class TrieNode
       numWords++;
     };
 
+    // decrement the number of words in a subtree at specific node.
+    void decrementNumWords()
+    {
+      numWords--;
+    };
+
     // toggle the status of any given node, which is representative of a given word existing.
     void toggleWord()
     {
@@ -42,6 +47,12 @@ class TrieNode
     void addChild(unsigned int index)
     {
       children[index] = new TrieNode();
+    };
+
+    void deleteChild(unsigned int index)
+    {
+      delete children[index];
+      children[index] = NULL;
     };
 
     // returns the status of a node and if it is a word.
@@ -168,7 +179,7 @@ class Trie
       return (searchResult != NULL) ? searchResult->getNumWords() : 0;
     };
 
-
+/*
     // gets all words with a given character and the count.
     unsigned int getWordsWithCharacter(TrieNode *node, char c, vector<string> &words, bool ancestralLetterFound=false, string str="")
     {
@@ -204,32 +215,179 @@ class Trie
       return res;
     };
 
+*/
+
+    // gets all words in the trie with a given substring. superior than the getWordsWithCharacter function. does that. one size strings do the same.
+    unsigned int getWordsWithSubstring(TrieNode *node, string substring, vector<string> &words, bool ancestralSubstringFound=false, string str="", unsigned int k=0)
+    {
+      // store the count of words with the given substring.
+      unsigned int res = 0;
+
+      if (ancestralSubstringFound || k == substring.size())
+      {
+        // if not a word, do not push the string nor count.
+        if (node->isWord())
+        {        
+          words.push_back(str);
+          res++;
+        }
+
+        // set the flag at the current recursive call to true, call-wide, to be able to handle all subtree calls the same. all will be preserved and stored.
+        ancestralSubstringFound = true;
+      };
+
+      // iterate through all possible children, go down if not null.
+      for (int x = 0; x < 62; x++)
+        if (node->getChild(x) != NULL)
+        {
+          // if the substring has been found previously, do not do any character comparisons. we dont care
+          if (ancestralSubstringFound)
+            res += getWordsWithSubstring(node->getChild(x), substring, words, ancestralSubstringFound, str + string(1, indexToChar(x)), k);
+          else
+          {
+            // ancestralSubstring has not been found in this else
+
+            // if the index that will be traversed down do matches the current kth letter of the substring, recurse and increment k for next letter.
+            // else if not matching, set k back to 0, start back down at the first letter in the substring for deeper recursive calls to build up the word as it goes down.
+            if (x == charToIndex(substring[k]))
+              res += getWordsWithSubstring(node->getChild(x), substring, words, ancestralSubstringFound, str + string(1, indexToChar(x)), k + 1);
+            else
+              res += getWordsWithSubstring(node->getChild(x), substring, words, ancestralSubstringFound, str + string(1, indexToChar(x)), 0);
+          };
+        };
+
+      return res;
+    };
+
+  // handles all 4 cases of deletion of a given string
+  bool del(string term)
+  {
+    TrieNode *searchResult = search(term);
+    // case #1: path to word does not exist.
+    // case #2: path to word exists, but is not a word.
+    // case #3/4: path to word exists, is a word, and has at least one word in subtree.
+    if (searchResult == NULL)
+      return false;
+    else if (!searchResult->isWord())
+      return false;
+    else if (searchResult->getNumWords() >= 1)
+      deleter(root, term);
+
+    return true;
+  };
+
   /*
+
   bool delete_(string term)
   {
-    vector<tuple<TrieNode*, TrieNode*, unsigned int index>> path;
-    TrieNode *searchResult = search(term);
-    if (searchResult == NULL) // the node does not exist; path not established.
-      return false;
-    else if (!searchResult->isWord()) // if the node exists and is not a word
-      return false;
-    else if (searchResult->getNumWords() > 1) // if the node exists, is a word, and has more than one word in subtree
+    unsigned int k = 0, cIndex = 0;
+    TrieNode *c = root, *p = NULL;
+    map<TrieNode*, tuple<TrieNode *, unsigned int>> relationships;
+    
+    while (k < term.size())
     {
-      searchResult->toggleWord();
-      searchResult->decrementNumWords();
-      return true;
-    }
+      if (c != root)
+        c->decrementNumWords();
 
-    unsigned int k = 0;
-    int index = -1;
-    TrieNode *child = root, *parent = NULL;
-    while ()
-    {
-      path.append(make_tuple(child, parent, index));
+      unsigned int childIndex = charToIndex(term[k]);
+      relationships[c] = make_tuple(p, childIndex);
+      p = c;
+      c = c->getChild(childIndex);
       k++;
     };
+
+    c->toggleWord();
+
+    TrieNode *upIter = p;
+    c->decrementNumWords();
+    unsigned int validNumWords = c->getNumWords();
+    while (upIter != NULL && upIter->getNumWords() == validNumWords)
+    {
+      tuple<TrieNode*, unsigned int> nodeData = relationships[upIter];
+      TrieNode *parent = get<0>(nodeData);
+      unsigned int childIndex = get<1>(nodeData);
+      if (validNumWords == upIter->getNumWords())
+        upIter->deleteChild(childIndex);
+      upIter = parent;
+      cout << upIter << endl;
+    };
+      
+    if (upIter != NULL)
+      upIter->deleteChild(get<1>(relationships[upIter]));
+
+    return true;
   };
+
   */
+
+  // handles case #3 and #4 on deletion of words in the trie
+  // case #3: no words in subtree of a word after deletion
+  // case #4: has words in subtree of a word after deletion
+  int deleter(TrieNode *node, string term, unsigned int k=0)
+  {
+    // if not the root, decrement the number of words at a given node on the way down
+    if (node != root)
+      node->decrementNumWords();
+
+    // if at the node of the word itself
+    if (k == term.size())
+    {
+      // toggle the word's flag to off (would be on)
+      node->toggleWord();
+      // case #4: word has words in subtree of word aside from word itself, return -1. delete
+      // else return number of words and delete until mismatch of numwords at a node with subresults
+      // in this else case, this means a node with other children down other paths have children
+      // so do not delete this node and stop all deletion actions with -1.
+      if (node->getNumWords() > 0)
+        return -1;
+      else
+        return node->getNumWords();
+    };
+
+    // gets count / subtree subresult.
+    int wordFurtherSubtreeWordCount = deleter(node->getChild(charToIndex(term[k])), term, k + 1);
+    // if at a termination of action case, do nothing and return back up the tree.
+    if (wordFurtherSubtreeWordCount == -1)
+      return -1;
+
+    // since a valid node deletion case, delete the child of the word while ascending up the call stack postorder.
+    node->deleteChild(charToIndex(term[k]));
+
+    // once the first subtree numwords mismatch is found, stop and terminate any and all deletion by returning -1.
+    if (node->getNumWords() != wordFurtherSubtreeWordCount)
+      return -1;
+
+    // return subresult. propagate a given action back up the tree.
+    return wordFurtherSubtreeWordCount;
+  };
+
+  // takes in positive integers and converts to string for input.
+  string intToString(unsigned int n)
+  {
+    string res = "";
+    int x = n;
+    while (x > 0)
+    {
+      res = string(1, '0' + (x % 10)) + res;
+      x /= 10;
+    };
+
+    return res;
+  };
+
+  // takes in a string of a number and converts to int.
+  int stringToInt(string number)
+  {
+    unsigned int res = 0, m = 1;
+    for (int x = number.size() - 1; x >= 0; x--)
+    {
+      res += m * (number[x] - '0');
+      m *= 10;
+    };
+
+    return res;
+  };
+
   private:
     TrieNode *root;
 
