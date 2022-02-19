@@ -388,6 +388,19 @@ class Trie
     return res;
   };
 
+
+    // calculate the proper character for a given base shifted index.
+    // in ascii, numbers come first as [48, 57], then uppercase as [65, 90], and finally lowercase as [97, 122].
+    unsigned int indexToChar(unsigned int index)
+    {
+      if (index >= 0 && index < 10)
+        return '0' + index;
+      else if (index >= 10 && index < 36)
+        return 'A' + (index - 10);
+      else if (index >= 36 && index < 62)
+        return 'a' + (index - 36);
+    };
+
   private:
     TrieNode *root;
 
@@ -420,18 +433,5 @@ class Trie
       else if (isLowerCase(c))
         return 36 + (c - 'a');
     };
-
-    // calculate the proper character for a given base shifted index.
-    // in ascii, numbers come first as [48, 57], then uppercase as [65, 90], and finally lowercase as [97, 122].
-    unsigned int indexToChar(unsigned int index)
-    {
-      if (index >= 0 && index < 10)
-        return '0' + index;
-      else if (index >= 10 && index < 36)
-        return 'A' + (index - 10);
-      else if (index >= 36 && index < 62)
-        return 'a' + (index - 36);
-    };
-
 
 };
