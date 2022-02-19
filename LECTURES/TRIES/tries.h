@@ -179,44 +179,6 @@ class Trie
       return (searchResult != NULL) ? searchResult->getNumWords() : 0;
     };
 
-/*
-    // gets all words with a given character and the count.
-    unsigned int getWordsWithCharacter(TrieNode *node, char c, vector<string> &words, bool ancestralLetterFound=false, string str="")
-    {
-      // stores the count of the words with a given character
-      unsigned int res = 0;
-
-      // if the character has previously been found in the current path of an arbitrary word and the node is a word
-      // add the word to the words vector and increment the counter.
-      if (ancestralLetterFound && node->isWord()) 
-      {
-        words.push_back(str);
-        res++;
-      };
-
-      // iterate through all possible character node child indexes.
-      for (int x = 0; x < 62; x++)
-      {
-        // if a given child of a node is non NULL...
-        if (node->getChild(x) != NULL)
-        {
-          // check if we are at the correct index for the character. if so, the word on the given path has the character.
-          // set the ancestralLetterFound parameter to true, we have found the letter.
-          // if it is not the character mapped to the current index, keep traversing, however keep the same ancestralLetterFound
-          // throughout all deeper level recursions. we only care to change it if we find the character.
-          // if the target character is found more than once, it will just be overwritten to the same value: true. no change to result.
-          if (x == charToIndex(c))
-            res += getWordsWithCharacter(node->getChild(x), c, words, true, str + string(1, indexToChar(x)));
-          else
-            res += getWordsWithCharacter(node->getChild(x), c, words, ancestralLetterFound, str + string(1, indexToChar(x)));
-        };
-      };
-
-      return res;
-    };
-
-*/
-
     // gets all words in the trie with a given substring. superior than the getWordsWithCharacter function. does that. one size strings do the same.
     unsigned int getWordsWithSubstring(TrieNode *node, string substring, vector<string> &words, bool ancestralSubstringFound=false, string str="", unsigned int k=0)
     {
@@ -275,50 +237,6 @@ class Trie
 
     return true;
   };
-
-  /*
-
-  bool delete_(string term)
-  {
-    unsigned int k = 0, cIndex = 0;
-    TrieNode *c = root, *p = NULL;
-    map<TrieNode*, tuple<TrieNode *, unsigned int>> relationships;
-    
-    while (k < term.size())
-    {
-      if (c != root)
-        c->decrementNumWords();
-
-      unsigned int childIndex = charToIndex(term[k]);
-      relationships[c] = make_tuple(p, childIndex);
-      p = c;
-      c = c->getChild(childIndex);
-      k++;
-    };
-
-    c->toggleWord();
-
-    TrieNode *upIter = p;
-    c->decrementNumWords();
-    unsigned int validNumWords = c->getNumWords();
-    while (upIter != NULL && upIter->getNumWords() == validNumWords)
-    {
-      tuple<TrieNode*, unsigned int> nodeData = relationships[upIter];
-      TrieNode *parent = get<0>(nodeData);
-      unsigned int childIndex = get<1>(nodeData);
-      if (validNumWords == upIter->getNumWords())
-        upIter->deleteChild(childIndex);
-      upIter = parent;
-      cout << upIter << endl;
-    };
-      
-    if (upIter != NULL)
-      upIter->deleteChild(get<1>(relationships[upIter]));
-
-    return true;
-  };
-
-  */
 
   // handles case #3 and #4 on deletion of words in the trie
   // case #3: no words in subtree of a word after deletion
@@ -387,7 +305,6 @@ class Trie
 
     return res;
   };
-
 
     // calculate the proper character for a given base shifted index.
     // in ascii, numbers come first as [48, 57], then uppercase as [65, 90], and finally lowercase as [97, 122].
